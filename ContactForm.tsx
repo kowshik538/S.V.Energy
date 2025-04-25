@@ -8,7 +8,7 @@ const ContactForm: React.FC = () => {
     phone: '',
     propertyType: 'residential',
     message: '',
-    isPolicyAccepted: false,
+    isPolicyAccepted: false
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,45 +32,82 @@ const ContactForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData({
+      ...formData,
+      [name]: value
+    });
 
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
     }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
+    setFormData({
+      ...formData,
+      [name]: checked
+    });
 
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (validateForm()) {
       setIsSubmitting(true);
 
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setIsSubmitted(true);
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          propertyType: 'residential',
-          message: '',
-          isPolicyAccepted: false,
+      try {
+        const response = await fetch('https://formspree.io/f/mkgrgozg', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json'
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            propertyType: formData.propertyType,
+            message: formData.message
+          })
         });
 
-        setTimeout(() => {
-          setIsSubmitted(false);
-        }, 5000);
-      }, 1500);
+        const result = await response.json();
+
+        if (response.ok) {
+          setIsSubmitted(true);
+          setFormData({
+            name: '',
+            email: '',
+            phone: '',
+            propertyType: 'residential',
+            message: '',
+            isPolicyAccepted: false
+          });
+
+          setTimeout(() => setIsSubmitted(false), 5000);
+        } else {
+          alert(result?.error || 'Something went wrong. Please try again.');
+        }
+      } catch (error) {
+        alert('Submission failed. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -84,7 +121,9 @@ const ContactForm: React.FC = () => {
             <Check className="w-8 h-8" />
           </div>
           <h4 className="text-xl font-bold mb-2">Thank You!</h4>
-          <p className="text-gray-600">Your message has been sent successfully. We'll get back to you soon.</p>
+          <p className="text-gray-600">
+            Your message has been sent successfully. We'll get back to you as soon as possible.
+          </p>
         </div>
       ) : (
         <form onSubmit={handleSubmit}>
@@ -94,12 +133,12 @@ const ContactForm: React.FC = () => {
                 Full Name <span className="text-red-500">*</span>
               </label>
               <input
+                type="text"
                 id="name"
                 name="name"
-                type="text"
                 value={formData.name}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                   errors.name ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="John Doe"
@@ -113,15 +152,15 @@ const ContactForm: React.FC = () => {
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
+                  type="email"
                   id="email"
                   name="email"
-                  type="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                     errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  placeholder="you@example.com"
+                  placeholder="johndoe@example.com"
                 />
                 {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
               </div>
@@ -131,12 +170,12 @@ const ContactForm: React.FC = () => {
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
+                  type="tel"
                   id="phone"
                   name="phone"
-                  type="tel"
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                     errors.phone ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="(123) 456-7890"
@@ -154,7 +193,7 @@ const ContactForm: React.FC = () => {
                 name="propertyType"
                 value={formData.propertyType}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="residential">Residential</option>
                 <option value="commercial">Commercial</option>
@@ -169,10 +208,10 @@ const ContactForm: React.FC = () => {
               <textarea
                 id="message"
                 name="message"
-                rows={4}
                 value={formData.message}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 ${
+                rows={4}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                   errors.message ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Tell us about your property and requirements..."
@@ -182,24 +221,33 @@ const ContactForm: React.FC = () => {
 
             <div>
               <div className="flex items-start">
-                <input
-                  id="isPolicyAccepted"
-                  name="isPolicyAccepted"
-                  type="checkbox"
-                  checked={formData.isPolicyAccepted}
-                  onChange={handleCheckboxChange}
-                  className="w-4 h-4 mt-1 border-gray-300 rounded text-primary-600 focus:ring-primary-500"
-                />
+                <div className="flex items-center h-5">
+                  <input
+                    id="isPolicyAccepted"
+                    name="isPolicyAccepted"
+                    type="checkbox"
+                    checked={formData.isPolicyAccepted}
+                    onChange={handleCheckboxChange}
+                    className="w-4 h-4 border-gray-300 rounded text-primary-600 focus:ring-primary-500"
+                  />
+                </div>
                 <div className="ml-3 text-sm">
-                  <label htmlFor="isPolicyAccepted" className={`font-medium ${errors.isPolicyAccepted ? 'text-red-500' : 'text-gray-700'}`}>
+                  <label
+                    htmlFor="isPolicyAccepted"
+                    className={`font-medium ${
+                      errors.isPolicyAccepted ? 'text-red-500' : 'text-gray-700'
+                    }`}
+                  >
                     I agree to the privacy policy <span className="text-red-500">*</span>
                   </label>
                   <p className="text-gray-500">
-                    We'll only use your information to process your request and never share it with third parties.
+                    We'll only use your information to process your request and will never share it with third parties.
                   </p>
                 </div>
               </div>
-              {errors.isPolicyAccepted && <p className="mt-1 text-sm text-red-500">{errors.isPolicyAccepted}</p>}
+              {errors.isPolicyAccepted && (
+                <p className="mt-1 text-sm text-red-500">{errors.isPolicyAccepted}</p>
+              )}
             </div>
 
             <div>
@@ -227,7 +275,7 @@ const ContactForm: React.FC = () => {
                       <path
                         className="opacity-75"
                         fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
                     Submitting...
