@@ -1,50 +1,59 @@
-import React, { useState } from 'react';
-import { Send, Check } from 'lucide-react';
+import React, { useState } from "react";
+import { Send, Check } from "lucide-react";
 
 const ContactForm: React.FC = () => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    propertyType: 'residential',
-    message: '',
-    isPolicyAccepted: false
+    name: "",
+    email: "",
+    phone: "",
+    propertyType: "residential",
+    message: "",
+    isPolicyAccepted: false,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ------------------ Validation ------------------
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.name.trim()) newErrors.name = "Name is required";
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = "Email is invalid";
     }
-    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-    if (!formData.message.trim()) newErrors.message = 'Message is required';
-    if (!formData.isPolicyAccepted) newErrors.isPolicyAccepted = 'You must accept the privacy policy';
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^[0-9]{10}$/.test(formData.phone)) {
+      newErrors.phone = "Phone number must be 10 digits";
+    }
+    if (!formData.message.trim()) newErrors.message = "Message is required";
+    if (!formData.isPolicyAccepted)
+      newErrors.isPolicyAccepted = "You must accept the privacy policy";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ------------------ Handlers ------------------
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: value
+      [name]: value,
     });
 
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: ''
+        [name]: "",
       });
     }
   };
@@ -53,13 +62,13 @@ const ContactForm: React.FC = () => {
     const { name, checked } = e.target;
     setFormData({
       ...formData,
-      [name]: checked
+      [name]: checked,
     });
 
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: ''
+        [name]: "",
       });
     }
   };
@@ -71,19 +80,20 @@ const ContactForm: React.FC = () => {
       setIsSubmitting(true);
 
       try {
-        const response = await fetch('https://formspree.io/f/mkgrgozg', {
-          method: 'POST',
+        // Build FormData for Formspree
+        const form = new FormData();
+        form.append("name", formData.name);
+        form.append("email", formData.email);
+        form.append("phone", formData.phone);
+        form.append("propertyType", formData.propertyType);
+        form.append("message", formData.message);
+
+        const response = await fetch("https://formspree.io/f/mkgrgozg", {
+          method: "POST",
+          body: form,
           headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json'
+            Accept: "application/json",
           },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            propertyType: formData.propertyType,
-            message: formData.message
-          })
         });
 
         const result = await response.json();
@@ -91,26 +101,27 @@ const ContactForm: React.FC = () => {
         if (response.ok) {
           setIsSubmitted(true);
           setFormData({
-            name: '',
-            email: '',
-            phone: '',
-            propertyType: 'residential',
-            message: '',
-            isPolicyAccepted: false
+            name: "",
+            email: "",
+            phone: "",
+            propertyType: "residential",
+            message: "",
+            isPolicyAccepted: false,
           });
 
           setTimeout(() => setIsSubmitted(false), 5000);
         } else {
-          alert(result?.error || 'Something went wrong. Please try again.');
+          setErrors({ form: result?.error || "Something went wrong. Please try again." });
         }
       } catch (error) {
-        alert('Submission failed. Please try again.');
+        setErrors({ form: "Submission failed. Please try again." });
       } finally {
         setIsSubmitting(false);
       }
     }
   };
 
+  // ------------------ Render ------------------
   return (
     <div id="quote" className="bg-white rounded-xl shadow-lg p-6 md:p-8">
       <h3 className="text-2xl font-bold mb-6">Get a Free Quote</h3>
@@ -122,14 +133,19 @@ const ContactForm: React.FC = () => {
           </div>
           <h4 className="text-xl font-bold mb-2">Thank You!</h4>
           <p className="text-gray-600">
-            Your message has been sent successfully. We'll get back to you as soon as possible.
+            Your message has been sent successfully. We'll get back to you as
+            soon as possible.
           </p>
         </div>
       ) : (
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-6">
+            {/* Name */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Full Name <span className="text-red-500">*</span>
               </label>
               <input
@@ -138,17 +154,24 @@ const ContactForm: React.FC = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
+                aria-invalid={!!errors.name}
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
+                  errors.name ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="John Doe"
               />
-              {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+              )}
             </div>
 
+            {/* Email + Phone */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -157,16 +180,22 @@ const ContactForm: React.FC = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  aria-invalid={!!errors.email}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
+                    errors.email ? "border-red-500" : "border-gray-300"
                   }`}
                   placeholder="johndoe@example.com"
                 />
-                {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+                )}
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  htmlFor="phone"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Phone Number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -175,17 +204,24 @@ const ContactForm: React.FC = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
+                  aria-invalid={!!errors.phone}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                    errors.phone ? 'border-red-500' : 'border-gray-300'
+                    errors.phone ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="(123) 456-7890"
+                  placeholder="9876543210"
                 />
-                {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone}</p>}
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
+                )}
               </div>
             </div>
 
+            {/* Property Type */}
             <div>
-              <label htmlFor="propertyType" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="propertyType"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Property Type
               </label>
               <select
@@ -201,8 +237,12 @@ const ContactForm: React.FC = () => {
               </select>
             </div>
 
+            {/* Message */}
             <div>
-              <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="message"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Message <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -211,14 +251,18 @@ const ContactForm: React.FC = () => {
                 value={formData.message}
                 onChange={handleChange}
                 rows={4}
+                aria-invalid={!!errors.message}
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
-                  errors.message ? 'border-red-500' : 'border-gray-300'
+                  errors.message ? "border-red-500" : "border-gray-300"
                 }`}
                 placeholder="Tell us about your property and requirements..."
               ></textarea>
-              {errors.message && <p className="mt-1 text-sm text-red-500">{errors.message}</p>}
+              {errors.message && (
+                <p className="mt-1 text-sm text-red-500">{errors.message}</p>
+              )}
             </div>
 
+            {/* Privacy Policy */}
             <div>
               <div className="flex items-start">
                 <div className="flex items-center h-5">
@@ -228,6 +272,7 @@ const ContactForm: React.FC = () => {
                     type="checkbox"
                     checked={formData.isPolicyAccepted}
                     onChange={handleCheckboxChange}
+                    aria-invalid={!!errors.isPolicyAccepted}
                     className="w-4 h-4 border-gray-300 rounded text-primary-600 focus:ring-primary-500"
                   />
                 </div>
@@ -235,21 +280,31 @@ const ContactForm: React.FC = () => {
                   <label
                     htmlFor="isPolicyAccepted"
                     className={`font-medium ${
-                      errors.isPolicyAccepted ? 'text-red-500' : 'text-gray-700'
+                      errors.isPolicyAccepted ? "text-red-500" : "text-gray-700"
                     }`}
                   >
-                    I agree to the privacy policy <span className="text-red-500">*</span>
+                    I agree to the privacy policy{" "}
+                    <span className="text-red-500">*</span>
                   </label>
                   <p className="text-gray-500">
-                    We'll only use your information to process your request and will never share it with third parties.
+                    We'll only use your information to process your request and
+                    will never share it with third parties.
                   </p>
                 </div>
               </div>
               {errors.isPolicyAccepted && (
-                <p className="mt-1 text-sm text-red-500">{errors.isPolicyAccepted}</p>
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.isPolicyAccepted}
+                </p>
               )}
             </div>
 
+            {/* Form Error */}
+            {errors.form && (
+              <p className="mt-2 text-sm text-red-600">{errors.form}</p>
+            )}
+
+            {/* Submit Button */}
             <div>
               <button
                 type="submit"
